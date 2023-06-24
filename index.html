@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Tarefas</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+    border-radius: 15px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #3f51b5;
+}
+
+.task-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.task-item {
+    background-color: #fafafa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.task-item .task-title, .task-title-input {
+    font-size: 16px;
+    margin: 0;
+    color: #333;
+}
+
+.task-item .task-description {
+    font-size: 14px;
+    color: #777;
+    margin: 5px 0 0;
+}
+
+.task-item .task-date {
+    font-size: 12px;
+    color: #999;
+    margin: 5px 0 0;
+}
+
+.task-form {
+    margin-top: 20px;
+}
+
+.task-form input[type="text"],
+.task-form textarea, .task-description-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.task-form input[type="submit"] {
+    background-color: #3f51b5;
+    border: none;
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.task-item .task-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.task-item .task-actions button {
+    background-color: #f44336;
+    border: none;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.task-item .task-actions button.edit-task {
+    background-color: #2196f3;
+}
+
+.task-date-input, #due-date {
+    width: calc(50% + 80px);
+    border-radius: 5px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<h1>Gerenciador de Tarefas</h1>
+<form class="task-form">
+    <input type="text" name="title" placeholder="Título da tarefa" required>
+    <textarea name="description" placeholder="Descrição da tarefa"></textarea>
+    <p>Vencimento da tarefa: <input type="date" id="due-date" name="due-date" required></p><br>
+    <input type="submit" value="Adicionar Tarefa">
+</form>
+<ul class="task-list" id="task-list">
+    <li class="task-item">
+        <div>
+            <h3 class="task-title">Título da Tarefa</h3>
+            <p class="task-description">Descrição da Tarefa</p>
+            <p class="task-date">Data de Vencimento: 22/06/2023</p>
+            <div class="task-actions">
+                <button class="edit-task">Editar</button>
+                <button class="save-task" style="display: none;">Salvar</button>
+                <button class="delete-task">Excluir</button>
+            </div>
+        </div>
+    </li>
+    <!-- Adicione mais elementos <li> conforme necessário -->
+</ul>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('.task-form').submit(function(event) {
+    event.preventDefault();
+
+    var title = $('input[name="title"]').val();
+    var description = $('textarea[name="description"]').val();
+    var dueDate = $('input[name="due-date"]').val();
+
+    $.ajax({
+      url: 'criacao.php', // Arquivo PHP responsável pela criação da tarefa
+      method: 'POST',
+      data: {
+        title: title,
+        description: description,
+        dueDate: dueDate
+      },
+      success: function(response) {
+        console.log(response);
+        // Recarregar a lista de tarefas após a adição da nova tarefa
+        $.ajax({
+          url: 'lista.php', // Arquivo PHP responsável pela leitura das tarefas
+          method: 'GET',
+          success: function(response) {
+            $('input[name="title"]').val('');
+            $('textarea[name="description"]').val('');
+            $('input[name="due-date"]').val('');
+            // Exibir um popup com a mensagem de sucesso
+            alert("Tarefa agendada com sucesso.");
+          },
+          error: function(xhr, status, error) {
+            console.log(error);
+          }
+        });
+      },
+      error: function(xhr, status, error) {
+        console.log(error);
+      }
+    });
+  });
+  $(document).on('click', '.delete-task', function() {
+  // Obter o ID da tarefa a ser excluída
+  var taskItem = $(this).closest('.task-item');
+  var taskId = taskItem.attr('taskId');
+
+  // Fazer uma chamada AJAX para excluir a tarefa
+  $.ajax({
+    url: 'delete.php',
+    method: 'POST', // Alterado para POST
+    data: {
+      taskId: taskId,
+      action: 'delete_task'
+    },
+    success: function(response) {
+      // Remover a tarefa da lista no navegador
+      taskItem.remove();
+      // Exibir uma mensagem de sucesso, se necessário
+      alert("Tarefa excluída com sucesso.");
+    },
+    error: function(xhr, status, error) {
+      console.log(error);
+      // Exibir uma mensagem de erro, se necessário
+      alert("Erro ao excluir a tarefa. Verifique o console para mais informações.");
+    }
+  });
+});
+
+
+  //Listagem de tarefas
+  $.ajax({
+    url: 'lista.php',
+    method: 'GET',
+    dataType: 'json',
+    success: function(response) {
+      // Limpa o conteúdo anterior
+      $('#task-list').empty();
+
+      // Itera sobre as tarefas do JSON
+      $.each(response, function(index, item) {
+        var taskId = item.taskId;
+        var titulo = item.titulo;
+        var descricao = item.descricao;
+        var dataValidade = item.data_final;
+
+        // Cria um elemento <li> para exibir os dados da tarefa
+        var itemHtml = '<li class="task-item" taskId="' + taskId + '">' +
+          '<div>' +
+          '<h3 class="task-title"taskId="' + taskId + '">' + titulo + '</h3>' +
+          '<p class="task-description">' + descricao + '</p>' +
+          '<p class="task-date">Data de Vencimento: ' + dataValidade + '</p>' +
+          '<div class="task-actions">' +
+          '<button class="edit-task">Editar</button>' +
+          '<button class="save-task" style="display: none;">Salvar</button>'+
+          '<button class="delete-task">Excluir</button>' +
+          '</div>' +
+          '</div>' +
+          '</li>';
+
+        // Adiciona o elemento <li> à lista de tarefas
+        $('#task-list').append(itemHtml);
+      });
+    },
+    error: function(xhr, status, error) {
+      console.log("Erro na requisição AJAX: " + status + " - " + error);
+    }
+  });
+});
+
+
+$(document).ready(function() {
+  // ...
+
+  // Evento de clique no botão "Editar"
+  $(document).on("click", ".edit-task", function() {
+    var listItem = $(this).closest(".task-item");
+    var taskId = listItem.attr("taskId");
+
+
+$(this).hide();
+listItem.find(".save-task").show();
+
+
+
+    // Obtém os elementos para edição
+    var titleElement = listItem.find('.task-title');
+    var descriptionElement = listItem.find('.task-description');
+    var dateElement = listItem.find('.task-date');
+
+    // Obtém os textos atuais
+    var currentTitle = titleElement.text();
+    var currentDescription = descriptionElement.text();
+    var currentDate = dateElement.text().replace("Data de Vencimento: ", "");
+
+    // Cria os elementos de input para edição
+    var titleInput = $('<input type="text" class="task-title-input">').val(currentTitle);
+    var descriptionInput = $('<textarea class="task-description-input">').text(currentDescription);
+    var dateInput = $('<input type="date" class="task-date-input">').val(currentDate);
+
+    // Substitui os elementos <h3>, <p> e <p> pelos inputs correspondentes
+    titleElement.replaceWith(titleInput);
+    descriptionElement.replaceWith(descriptionInput);
+    dateElement.replaceWith(dateInput);
+
+    // Cria o botão "Salvar"
+    var saveButton = $('<button class="save-task">Salvar</button>');
+    // Altera os botões para "Salvar" e "Cancelar"
+    $(this).hide();
+    listItem.find(".save-task").show();
+  });
+
+  // Evento de clique no botão "Salvar"
+  $(document).on("click", ".save-task", function() {
+    var listItem = $(this).closest(".task-item");
+
+    // Obtém os inputs editados
+    var titleInput = listItem.find('.task-title-input');
+    var descriptionInput = listItem.find('.task-description-input');
+    var dateInput = listItem.find('.task-date-input');
+
+    // Obtém os valores dos inputs
+    var newTitle = titleInput.val();
+    var newDescription = descriptionInput.val();
+    var newDate = dateInput.val();
+
+    // Cria novamente os elementos <h3>, <p> e <p> com os novos valores
+    var newTitleElement = $('<h3 class="task-title" taskId="' + listItem.attr("taskId") + '">').text(newTitle);
+    var newDescriptionElement = $('<p class="task-description">').text(newDescription);
+    var newDateElement = $('<p class="task-date">').text("Data de Vencimento: " + newDate);
+
+    // Substitui os inputs pelos elementos atualizados
+    titleInput.replaceWith(newTitleElement);
+    descriptionInput.replaceWith(newDescriptionElement);
+    dateInput.replaceWith(newDateElement);
+
+    // Altera os botões de volta para "Editar" e "Excluir"
+    listItem.find(".edit-task").show();
+    $(this).hide();
+  });
+
+});
+
+
+
+</script>
+
+</body>
+</html>
+
